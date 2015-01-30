@@ -1,0 +1,132 @@
+About
+=====
+
+This is a set of scripts I've developed over the past few years to archive
+the contents of my media server to BD-R.  You configure it to monitor
+selected directories within a containing directory.  As files are added or
+modified, they are flagged to be written (or rewritten) to the archive.  As
+files are deleted, they're flagged to not be restored (though if they've
+already archived, they'll remain archived...they just won't be restored). 
+It's already saved my butt once when the RAIDed drives in a NAS box started
+crapping out on me; it might be useful to others.
+
+Archiving Strategy
+==================
+
+As a disc image is built, the largest file that needs to be archived and
+that will fit the remaining space is added.  This process repeats until
+either no space is left or no files remain that will fit in the remaining
+space.  Many of my archive discs, as a result, are dominated by a few large
+files (usually movies or TV shows), with a few small files (songs, photos,
+or metadata files) filling in the remaining space.  It's usually when
+there's only one disc's worth of data remaining that the rest of the small
+files end up getting written in one shot.
+
+Files are written to disc as-is.  You can pop an archive disc into a
+compatible drive and read out the contents.  One of my Blu-ray players will
+even play video files straight off of my archive discs, as the files are
+already in a format it understands.
+
+Caveat
+======
+
+Files are written to a UDF 2.5 image.  Large (>4GB) files are supported. 
+What isn't supported are certain characters in filenames.  I think "$" is
+the most troublesome, but there might be one or two others.  Keep that in
+mind when you're archiving files.
+
+Requirements
+============
+
+* a MySQL server
+* cdrtools (or a compatible replacement; provides mkisofs to create disc
+  images)
+* dvd+rw-tools (provides growisofs to burn disc images)
+* dvdisaster (augments disc images with error recovery information)
+
+There might be other stuff I'm forgetting, but most of the rest of the
+scripts use fairly standard tools (tar, sed, awk, etc.)
+
+Compatibility
+=============
+
+These scripts were developed and tested and are used on Linux.  They should
+work elsewhere (Mac OS X, *BSD, Cygwin, etc.), but some OS-specific tweaks
+may be necessary.
+
+Installation
+============
+
+Create an empty database on your MySQL server, and initialize it with the
+contents of backup_index-schema.sql.  
+
+Copy settings-example.sh to settings.sh.  Customize as needed.
+
+Copy settings-example.sql to settings.sql.  Customize as needed and add its
+contents to the database.
+
+Usage
+=====
+
+The most frequently-used scripts are invoked as follows:
+
+update-index.sh
+
+  Check the configured directories for added/deleted/changed files and
+  update the database.
+
+prepare-disc.sh -br
+
+  Select files for backup and create an ISO image.  The options shown in the 
+  example create a single-layer BD-R image with 20% of the available space
+  reserved for error recovery.  Invoke with -h to see the available options.
+  You can use CD-R, DVD-R, or BD-R for archiving.  Single- and dual-layer 
+  DVD-R and BD-R are supported.
+
+  A copy of the database is included on every disc; the database is needed
+  for file recovery, as it tells us which files are on which discs.
+  
+burn-disc.sh backup_1.iso
+
+  Burn an image to disc, and then read it back in to check that it was
+  burned without error.
+
+progress.sh
+
+  Estimate the number of discs needed to complete archiving.  (It's hard-
+  coded to assume you're backing up to single-layer BD-R with 20% error
+  recovery; you'd want to adjust the constant 20020250624 (on the last line) 
+  to report accurate results for other media or other levels of redundancy.
+
+Some less-frequently-used scripts:
+
+backup-schema.sh
+
+  Back up the database schema to a local file.  This is mostly for
+  development use, if the schema changes.
+
+backup-database.sh
+
+  Back up the database schema and contents to a file, and use that to
+  replicate the database on another (presumably remote) MySQL server. 
+  Before I started writing the database to each disc, this was how I made 
+  sure I had an offsite backup of the database.
+
+rebuild.sh
+restore.sh
+wait-on-drive.sh
+
+  These are mainly of use when restoring files from the archive.  You could
+  just copy all files from all discs in sequence, but that would end up
+  restoring files you had deleted.  The purpose of these scripts is to only
+  restore the files the database knows about, which will probably be a
+  little bit faster as well.
+
+Disclaimer
+==========
+
+So far, these scripts have worked pretty well for me.  That said, they're
+worth what you paid for them. :-) The file-restore scripts have had the
+least amount of testing, as I've only needed to do one full recovery so far. 
+Your files are written to disc as-is, so to recover a single file, you could
+just look up which disc holds it and pop it in.

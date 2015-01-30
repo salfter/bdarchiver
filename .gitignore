@@ -1,0 +1,9 @@
+*~
+*.iso
+*.bz2
+tmp
+contents
+filelist
+preplist
+settings.sh
+*.sums
